@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Мега Бонуска</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <style>
   :root { --cell-h: 60px; --w: 290px; }
 
@@ -27,7 +27,6 @@
   }
   .track{
     position:absolute; inset:0 auto 0 0; width:100%;
-    transition: transform 16s cubic-bezier(.18,.85,.28,1);
     will-change: transform;
   }
   .cell{
@@ -60,17 +59,7 @@
   .btn:disabled{ background:#6b6b6b; box-shadow:none; cursor:not-allowed; }
 
   .result{ margin-top:14px; font-size:18px; display:none; }
-
-  /* Анимация отскока */
-  @keyframes bounceStop {
-    0%   { transform: translateY(var(--final-pos)); }
-    40%  { transform: translateY(calc(var(--final-pos) + 6px)); }
-    70%  { transform: translateY(calc(var(--final-pos) - 3px)); }
-    100% { transform: translateY(var(--final-pos)); }
-  }
-  .bounce {
-    animation: bounceStop 0.5s ease-out forwards;
-  }
+  #claim{ display:none; }
 </style>
 </head>
 <body>
@@ -85,6 +74,7 @@
 
     <button class="btn" id="spin">КРУТИТЬ</button>
     <div class="result" id="res">Ура! Вы выиграли 1 USDT 🎉</div>
+    <button class="btn" id="claim">ЗАБРАТЬ</button>
   </div>
 
 <script>
@@ -96,12 +86,12 @@
     "100 DOGE","500 USDT","1 USDT","3 ETH",
     "10 ETH","0.1 ETH","100 XRP","5 BNB","2 BNB"
   ];
-  const slipFromLabel = "500 USDT";
-  const targetLabel   = "1 USDT";
+  const targetLabel = "1 USDT";
   const cellH = 60, middleIndex = 1;
   const track = document.getElementById('track');
   const spinBtn = document.getElementById('spin');
   const resEl  = document.getElementById('res');
+  const claimBtn = document.getElementById('claim');
   const attemptsEl = document.getElementById('attempts');
 
   let long = [];
@@ -119,69 +109,37 @@
     attemptsEl.textContent = `У вас попыток: ${attempts}`;
     spinBtn.disabled = true;
 
-    const mainDurationMs = 16000;  // основная прокрутка
-    const pauseBetween   = 0;    // пауза на "подвисании"
-    const slipDuration   = 500;    // сваливание
-    const postBounceDelay= 600;
-
-    const slipIndex = base.indexOf(slipFromLabel);
+    const targetBaseIndex = base.indexOf(targetLabel);
     const extraRounds = 14;
-    const slipIndexInLong = extraRounds*base.length + slipIndex;
+    const targetIndexInLong = extraRounds*base.length + targetBaseIndex;
+    const finalY = -((targetIndexInLong - middleIndex) * cellH);
 
-    // позиция "между" 500 USDT и 1 USDT → добавим половину высоты ячейки
-    const finalY_mid = -((slipIndexInLong - middleIndex) * cellH) - cellH/2;
-
-    // финальная позиция ровно на 1 USDT
-    const finalY_target = -( (slipIndexInLong+1 - middleIndex) * cellH );
-
-    // запускаем длинное вращение до промежуточной позиции
-    track.style.transition = `transform ${mainDurationMs/1000}s cubic-bezier(.18,.85,.28,1)`;
-    track.style.setProperty("--final-pos", finalY_target + "px"); // для bounce
+    track.style.transition = `transform 16s cubic-bezier(.05,.95,.1,1)`;
     requestAnimationFrame(() => {
-      track.style.transform = `translateY(${finalY_mid}px)`;
+      track.style.transform = `translateY(${finalY}px)`;
     });
 
-    // после основной прокрутки ждём паузу и делаем сваливание
+    // показать результат после остановки
     setTimeout(() => {
-      setTimeout(() => {
-        track.style.transition = `transform ${slipDuration}ms cubic-bezier(.2,1,.3,1)`;
-        requestAnimationFrame(() => {
-          track.style.transform = `translateY(${finalY_target}px)`;
-        });
+      spinBtn.style.display = "none";
+      resEl.style.display = 'block';
+      claimBtn.style.display = 'inline-block';
 
-        // после падения — bounce
-        setTimeout(() => {
-          track.classList.add("bounce");
+      confetti({
+        particleCount: 140,
+        spread: 90,
+        origin: { y: 0.6 }
+      });
+    }, 16200);
+  });
 
-          setTimeout(() => {
-            resEl.style.display = 'block';
-            spinBtn.style.display = "none";
-
-            spinBtn.textContent = "ЗАБРАТЬ";
-            spinBtn.disabled = false;
-            spinBtn.style.display = "inline-block";
-
-            confetti({
-              particleCount: 140,
-              spread: 90,
-              origin: { y: 0.6 }
-            });
-
-            spinBtn.onclick = () => {
-                const data = JSON.stringify({ action: "send_message", message: "Привет из веб-приложения!" });
-                Telegram.WebApp.sendData(data);
-                // Передаем данные в бот
-            };
-
-            setTimeout(() => track.classList.remove("bounce"), 800);
-
-          }, postBounceDelay);
-        }, slipDuration+20);
-      }, pauseBetween);
-    }, mainDurationMs+200);
+  claimBtn.addEventListener('click', () => {
+    if (tg) {
+      tg.sendData("1 USDT");
+    } else {
+      alert("Отправлено в бота: 1 USDT");
+    }
   });
 </script>
 </body>
 </html>
-
-
