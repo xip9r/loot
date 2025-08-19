@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Слот-автомат</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #000;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .wrapper {
+      text-align: center;
+      color: #fff;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+    #slots {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .reel-container {
+      width: 80px;
+      height: 80px;
+      overflow: hidden;
+      margin: 0 10px;
+      border-radius: 10px;
+      background: #222;
+      position: relative;
+    }
+
+    .reel-strip {
+      display: flex;
+      flex-direction: column;
+      transition: transform 1s ease-out;
+    }
+
+    .symbol {
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+    }
+
+    button {
+      background: linear-gradient(to right, #ff5f6d, #ffc371);
+      border: none;
+      border-radius: 10px;
+      padding: 15px 40px;
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+    }
+
+    #message {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+
+    #confetti {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: none;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <h1>Осталось попыток: <span id="attempts">3</span></h1>
+
+    <div id="slots">
+      <div class="reel-container"><div class="reel-strip" id="reel1"></div></div>
+      <div class="reel-container"><div class="reel-strip" id="reel2"></div></div>
+      <div class="reel-container"><div class="reel-strip" id="reel3"></div></div>
+    </div>
+
+    <button id="spinBtn">ИГРАТЬ</button>
+
+    <div id="message">У вас есть 3 попытки. Нажмите «Играть»!</div>
+  </div>
+
+  <canvas id="confetti"></canvas>
+
+  <script>
+    const symbols = ["🍒", "🍊", "🔔", "🍉", "🎁", "⭐"];
+    const reels = [
+      document.getElementById("reel1"),
+      document.getElementById("reel2"),
+      document.getElementById("reel3")
+    ];
+
+    const attemptsDisplay = document.getElementById("attempts");
+    const message = document.getElementById("message");
+    const spinBtn = document.getElementById("spinBtn");
+    const confettiCanvas = document.getElementById("confetti");
+
+    let attempts = 3;
+
+    // Текущие центральные символы (по умолчанию случайные)
+    let currentSymbols = [
+      randomSymbol(),
+      randomSymbol(),
+      randomSymbol()
+    ];
+
+    function randomSymbol() {
+      return symbols[Math.floor(Math.random() * symbols.length)];
+    }
+
+    function generateStrip(reel, currentSymbol, resultSymbol) {
+      reel.innerHTML = "";
+
+      const stripSymbols = [];
+      stripSymbols.push(currentSymbol); // Начальный символ
+
+      for (let i = 0; i < 3; i++) {
+        stripSymbols.push(randomSymbol());
+      }
+
+      stripSymbols.push(resultSymbol); // Конечный результат
+
+      stripSymbols.forEach(symbol => {
+        const el = document.createElement("div");
+        el.className = "symbol";
+        el.textContent = symbol;
+        reel.appendChild(el);
+      });
+    }
+
+    function spinAllReels(results, callback) {
+      reels.forEach((reel, i) => {
+        const current = currentSymbols[i];
+        const result = results[i];
+
+        generateStrip(reel, current, result);
+
+        reel.style.transition = "none";
+        reel.style.transform = "translateY(0)";
+
+        setTimeout(() => {
+          reel.style.transition = "transform 1s ease-out";
+          reel.style.transform = "translateY(-320px)";
+        }, 50 + i * 100);
+
+        // Обновляем текущий символ
+        currentSymbols[i] = result;
+      });
+
+      setTimeout(() => {
+        if (callback) callback();
+      }, 1300);
+    }
+
+    function triggerConfetti() {
+      const ctx = confettiCanvas.getContext("2d");
+      confettiCanvas.style.display = "block";
+      confettiCanvas.width = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+
+      let particles = Array.from({ length: 200 }, () => ({
+        x: Math.random() * confettiCanvas.width,
+        y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+        r: Math.random() * 4 + 1,
+        d: Math.random() * 10 + 2,
+        color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+        tilt: Math.random() * 10 - 5
+      }));
+
+      function draw() {
+        ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        particles.forEach(p => {
+          ctx.beginPath();
+          ctx.fillStyle = p.color;
+          ctx.ellipse(p.x, p.y, p.r, p.r * 0.6, p.tilt, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        update();
+      }
+
+      function update() {
+        particles.forEach(p => {
+          p.y += Math.cos(p.d) + 2;
+          p.x += Math.sin(p.tilt) * 0.5;
+        });
+      }
+
+      let animation = setInterval(draw, 30);
+
+      setTimeout(() => {
+        clearInterval(animation);
+        confettiCanvas.style.display = "none";
+      }, 5000);
+    }
+
+    spinBtn.addEventListener("click", () => {
+      if (attempts <= 0) return;
+
+      attempts--;
+      attemptsDisplay.textContent = attempts;
+
+      if (attempts === 0) {
+        spinAllReels(["🎁", "🎁", "🎁"], () => {
+          message.innerHTML = "Ура, +10 FS для Вас!";
+          spinBtn.textContent = "ЗАБРАТЬ БОНУСКУ";
+          triggerConfetti();
+        });
+      } else {
+        spinAllReels(
+          [randomSymbol(), randomSymbol(), randomSymbol()],
+          () => {
+            message.textContent = "Попробуйте снова!";
+          }
+        );
+      }
+    });
+
+    // Инициализация: отображаем первые случайные символы
+    document.addEventListener("DOMContentLoaded", () => {
+      reels.forEach((reel, i) => {
+        generateStrip(reel, currentSymbols[i], currentSymbols[i]);
+      });
+    });
+  </script>
+</body>
+</html>
