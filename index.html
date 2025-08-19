@@ -1,251 +1,187 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Слот-автомат</title>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Мега Бонуска</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+  :root { --cell-h: 60px; --w: 290px; }
 
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: #000;
-      font-family: Arial, sans-serif;
-    }
+  * { box-sizing: border-box; }
+  body{
+    margin:0; min-height:100vh; display:grid; place-items:center;
+    background:#0a0b1a; color:#ffe477; font-family: Inter, system-ui, Arial, sans-serif;
+  }
+  .wrap{ width: min(92vw, 360px); text-align:center; }
+  .title{ font-size:28px; font-weight:800; margin:2px 0 6px; text-shadow:0 2px 12px rgba(255,228,80,.25); }
+  .sub{ color:#cfcfd8; opacity:.85; margin-bottom:14px; }
 
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+  .reel{
+    position:relative; width:var(--w); height:calc(var(--cell-h) * 3);
+    margin:12px auto 18px; border-radius:14px; overflow:hidden;
+    border:2px solid rgba(255,255,255,.18);
+    background: radial-gradient(120% 120% at 50% 0%, #0f1640 0%, #060914 65%);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35) inset;
+  }
+  .track{
+    position:absolute; inset:0 auto 0 0; width:100%;
+    transition: transform 16s cubic-bezier(.18,.85,.28,1);
+    will-change: transform;
+  }
+  .cell{
+    height:var(--cell-h); display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:20px; letter-spacing:.4px;
+    color:#ffe477;
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .marker{
+    pointer-events:none;
+    position:absolute; left:0; top:var(--cell-h); width:100%; height:var(--cell-h);
+    border-top:2px solid rgba(255,255,255,.22);
+    border-bottom:2px solid rgba(255,255,255,.22);
+  }
+  .arrow{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    width:0; height:0;
+    border-left:12px solid #3bff7b;
+    border-top:8px solid transparent; border-bottom:8px solid transparent;
+    filter: drop-shadow(0 0 6px #3bff7b);
+  }
 
-    .wrapper {
-      text-align: center;
-      color: #fff;
-    }
+  .btn{
+    display:inline-block; width:var(--w); padding:14px 18px; border-radius:14px;
+    border:0; cursor:pointer; font-weight:900; font-size:18px; color:#fff;
+    background: linear-gradient(135deg,#ff2d6f,#fe7a28);
+    box-shadow: 0 6px 18px rgba(254, 89, 68, .45);
+    margin-top:10px;
+  }
+  .btn:disabled{ background:#6b6b6b; box-shadow:none; cursor:not-allowed; }
 
-    h1 {
-      margin-bottom: 20px;
-      font-size: 24px;
-    }
+  .result{ margin-top:14px; font-size:18px; display:none; }
 
-    #slots {
-      display: flex;
-      justify-content: center;
-      margin: 20px 0;
-    }
-
-    .reel-container {
-      width: 80px;
-      height: 80px;
-      overflow: hidden;
-      margin: 0 10px;
-      border-radius: 10px;
-      background: #222;
-      position: relative;
-    }
-
-    .reel-strip {
-      display: flex;
-      flex-direction: column;
-      transition: transform 1s ease-out;
-    }
-
-    .symbol {
-      height: 80px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 40px;
-    }
-
-    button {
-      background: linear-gradient(to right, #ff5f6d, #ffc371);
-      border: none;
-      border-radius: 10px;
-      padding: 15px 40px;
-      font-size: 18px;
-      font-weight: bold;
-      color: white;
-      cursor: pointer;
-    }
-
-    #message {
-      margin-top: 20px;
-      font-size: 18px;
-    }
-
-    #confetti {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      display: none;
-      z-index: 999;
-    }
-  </style>
+  /* Анимация отскока */
+  @keyframes bounceStop {
+    0%   { transform: translateY(var(--final-pos)); }
+    40%  { transform: translateY(calc(var(--final-pos) + 6px)); }
+    70%  { transform: translateY(calc(var(--final-pos) - 3px)); }
+    100% { transform: translateY(var(--final-pos)); }
+  }
+  .bounce {
+    animation: bounceStop 0.5s ease-out forwards;
+  }
+</style>
 </head>
 <body>
-  <div class="wrapper">
-    <h1>Осталось попыток: <span id="attempts">3</span></h1>
+  <div class="wrap">
+    <div class="title">Мега Бонуска</div>
+    <div class="sub" id="attempts">У вас попыток: 1</div>
 
-    <div id="slots">
-      <div class="reel-container"><div class="reel-strip" id="reel1"></div></div>
-      <div class="reel-container"><div class="reel-strip" id="reel2"></div></div>
-      <div class="reel-container"><div class="reel-strip" id="reel3"></div></div>
+    <div class="reel" aria-live="polite">
+      <div class="track" id="track"></div>
+      <div class="marker"><div class="arrow"></div></div>
     </div>
 
-    <button id="spinBtn">ИГРАТЬ</button>
-
-    <div id="message">У вас есть 3 попытки. Нажмите «Играть»!</div>
+    <button class="btn" id="spin">КРУТИТЬ</button>
+    <div class="result" id="res">Ура! Вы выиграли 1 USDT 🎉</div>
   </div>
 
-  <canvas id="confetti"></canvas>
+<script>
+  const tg = window.Telegram?.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
 
-  <script>
-    const symbols = ["🍒", "🍊", "🔔", "🍉", "🎁", "⭐"];
-    const reels = [
-      document.getElementById("reel1"),
-      document.getElementById("reel2"),
-      document.getElementById("reel3")
-    ];
+  const base = [
+    "0.1 BTC","1 BTC","10 BTC",
+    "100 DOGE","500 USDT","1 USDT","3 ETH",
+    "10 ETH","0.1 ETH","100 XRP","5 BNB","2 BNB"
+  ];
+  const slipFromLabel = "500 USDT";
+  const targetLabel   = "1 USDT";
+  const cellH = 60, middleIndex = 1;
+  const track = document.getElementById('track');
+  const spinBtn = document.getElementById('spin');
+  const resEl  = document.getElementById('res');
+  const attemptsEl = document.getElementById('attempts');
 
-    const attemptsDisplay = document.getElementById("attempts");
-    const message = document.getElementById("message");
-    const spinBtn = document.getElementById("spinBtn");
-    const confettiCanvas = document.getElementById("confetti");
+  let long = [];
+  for (let i=0;i<30;i++) long = long.concat(base);
+  track.innerHTML = long.map(v => `<div class="cell">${v}</div>`).join('');
 
-    let attempts = 3;
+  let startIndex = Math.floor(base.length/2);
+  track.style.transform = `translateY(${-(startIndex)*cellH}px)`;
 
-    // Текущие центральные символы (по умолчанию случайные)
-    let currentSymbols = [
-      randomSymbol(),
-      randomSymbol(),
-      randomSymbol()
-    ];
+  let attempts = 1;
 
-    function randomSymbol() {
-      return symbols[Math.floor(Math.random() * symbols.length)];
-    }
+  spinBtn.addEventListener('click', () => {
+    if (attempts <= 0) return;
+    attempts--;
+    attemptsEl.textContent = `У вас попыток: ${attempts}`;
+    spinBtn.disabled = true;
 
-    function generateStrip(reel, currentSymbol, resultSymbol) {
-      reel.innerHTML = "";
+    const mainDurationMs = 16000;  // основная прокрутка
+    const pauseBetween   = 10;    // пауза на "подвисании"
+    const slipDuration   = 500;    // сваливание
+    const postBounceDelay= 600;
 
-      const stripSymbols = [];
-      stripSymbols.push(currentSymbol); // Начальный символ
+    const slipIndex = base.indexOf(slipFromLabel);
+    const extraRounds = 14;
+    const slipIndexInLong = extraRounds*base.length + slipIndex;
 
-      for (let i = 0; i < 3; i++) {
-        stripSymbols.push(randomSymbol());
-      }
+    // позиция "между" 500 USDT и 1 USDT → добавим половину высоты ячейки
+    const finalY_mid = -((slipIndexInLong - middleIndex) * cellH) - cellH/2;
 
-      stripSymbols.push(resultSymbol); // Конечный результат
+    // финальная позиция ровно на 1 USDT
+    const finalY_target = -( (slipIndexInLong+1 - middleIndex) * cellH );
 
-      stripSymbols.forEach(symbol => {
-        const el = document.createElement("div");
-        el.className = "symbol";
-        el.textContent = symbol;
-        reel.appendChild(el);
-      });
-    }
+    // запускаем длинное вращение до промежуточной позиции
+    track.style.transition = `transform ${mainDurationMs/1000}s cubic-bezier(.18,.85,.28,1)`;
+    track.style.setProperty("--final-pos", finalY_target + "px"); // для bounce
+    requestAnimationFrame(() => {
+      track.style.transform = `translateY(${finalY_mid}px)`;
+    });
 
-    function spinAllReels(results, callback) {
-      reels.forEach((reel, i) => {
-        const current = currentSymbols[i];
-        const result = results[i];
+    // после основной прокрутки ждём паузу и делаем сваливание
+    setTimeout(() => {
+      setTimeout(() => {
+        track.style.transition = `transform ${slipDuration}ms cubic-bezier(.2,1,.3,1)`;
+        requestAnimationFrame(() => {
+          track.style.transform = `translateY(${finalY_target}px)`;
+        });
 
-        generateStrip(reel, current, result);
-
-        reel.style.transition = "none";
-        reel.style.transform = "translateY(0)";
-
+        // после падения — bounce
         setTimeout(() => {
-          reel.style.transition = "transform 1s ease-out";
-          reel.style.transform = "translateY(-320px)";
-        }, 50 + i * 100);
+          track.classList.add("bounce");
 
-        // Обновляем текущий символ
-        currentSymbols[i] = result;
-      });
+          setTimeout(() => {
+            resEl.style.display = 'block';
+            spinBtn.style.display = "none";
 
-      setTimeout(() => {
-        if (callback) callback();
-      }, 1300);
-    }
+            spinBtn.textContent = "ЗАБРАТЬ";
+            spinBtn.disabled = false;
+            spinBtn.style.display = "inline-block";
 
-    function triggerConfetti() {
-      const ctx = confettiCanvas.getContext("2d");
-      confettiCanvas.style.display = "block";
-      confettiCanvas.width = window.innerWidth;
-      confettiCanvas.height = window.innerHeight;
+            confetti({
+              particleCount: 140,
+              spread: 90,
+              origin: { y: 0.6 }
+            });
 
-      let particles = Array.from({ length: 200 }, () => ({
-        x: Math.random() * confettiCanvas.width,
-        y: Math.random() * confettiCanvas.height - confettiCanvas.height,
-        r: Math.random() * 4 + 1,
-        d: Math.random() * 10 + 2,
-        color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-        tilt: Math.random() * 10 - 5
-      }));
+            spinBtn.onclick = () => {
+              if (tg) {
+                tg.sendData(targetLabel);
+              } else {
+                alert("Отправлено в бота: " + targetLabel);
+              }
+            };
 
-      function draw() {
-        ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-        particles.forEach(p => {
-          ctx.beginPath();
-          ctx.fillStyle = p.color;
-          ctx.ellipse(p.x, p.y, p.r, p.r * 0.6, p.tilt, 0, Math.PI * 2);
-          ctx.fill();
-        });
-        update();
-      }
+            setTimeout(() => track.classList.remove("bounce"), 800);
 
-      function update() {
-        particles.forEach(p => {
-          p.y += Math.cos(p.d) + 2;
-          p.x += Math.sin(p.tilt) * 0.5;
-        });
-      }
-
-      let animation = setInterval(draw, 30);
-
-      setTimeout(() => {
-        clearInterval(animation);
-        confettiCanvas.style.display = "none";
-      }, 5000);
-    }
-
-    spinBtn.addEventListener("click", () => {
-      if (attempts <= 0) return;
-
-      attempts--;
-      attemptsDisplay.textContent = attempts;
-
-      if (attempts === 0) {
-        spinAllReels(["🎁", "🎁", "🎁"], () => {
-          message.innerHTML = "Ура, +10 FS для Вас!";
-          spinBtn.textContent = "ЗАБРАТЬ БОНУСКУ";
-          triggerConfetti();
-        });
-      } else {
-        spinAllReels(
-          [randomSymbol(), randomSymbol(), randomSymbol()],
-          () => {
-            message.textContent = "Попробуйте снова!";
-          }
-        );
-      }
-    });
-
-    // Инициализация: отображаем первые случайные символы
-    document.addEventListener("DOMContentLoaded", () => {
-      reels.forEach((reel, i) => {
-        generateStrip(reel, currentSymbols[i], currentSymbols[i]);
-      });
-    });
-  </script>
+          }, postBounceDelay);
+        }, slipDuration+20);
+      }, pauseBetween);
+    }, mainDurationMs+200);
+  });
+</script>
 </body>
 </html>
