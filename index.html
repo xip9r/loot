@@ -168,11 +168,9 @@
             });
 
             spinBtn.onclick = () => {
-              if (tg) {
-                tg.sendData(targetLabel);
-              } else {
-                alert("Отправлено в бота: " + targetLabel);
-              }
+                const data = JSON.stringify({ action: "send_message", message: "Привет из веб-приложения!" });
+                Telegram.WebApp.sendData(data);
+                // Передаем данные в бот
             };
 
             setTimeout(() => track.classList.remove("bounce"), 800);
@@ -185,4 +183,5 @@
 </script>
 </body>
 </html>
+
 
