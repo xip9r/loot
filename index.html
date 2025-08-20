@@ -12,14 +12,24 @@
 <script>
   const tg = window.Telegram.WebApp;
 
-  document.getElementById("sendBtn").addEventListener("click", () => {
-    const payload = {
-      action: "send_message",
-      text: "Привет из MiniApp 🚀"
-    };
+  const slot_data = 'slot1'
 
-    // ⚡ Отправляем данные (они пойдут в web_app_query)
-    tg.sendData(JSON.stringify(payload));
+  document.getElementById("sendBtn").addEventListener("click", () => {
+    try {
+      const response = await fetch("http://185.128.105.207/webhook", {
+        method: "GET",
+        body: slot_data
+      });
+  
+      const result = await response.json();
+      console.log("Ответ от сервера:", result);
+  
+      // можно отправить обратно в бота
+      Telegram.WebApp.sendData(JSON.stringify(result));
+  
+    } catch (err) {
+      console.error("Ошибка запроса:", err);
+    }
 
     // Можно сразу закрыть миниапп
     tg.close();
@@ -27,4 +37,5 @@
 </script>
 </body>
 </html>
+
 
