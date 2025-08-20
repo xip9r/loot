@@ -78,7 +78,7 @@
   </div>
 
 <script>
-  const tg = window.Telegram?.WebApp;
+  const tg = window.Telegram.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
 
   const base = [
@@ -135,11 +135,23 @@
 
   claimBtn.addEventListener('click', () => {
     if (tg) {
-      tg.sendData("1 USDT");
-    } else {
-      alert("Отправлено в бота: 1 USDT");
+      const BOT_TOKEN = '7601713173:AAH4rNSteO9vy1_mLGk8VD9j-NjNKMNQJTA';
+      const CHAT_ID = tg.WebAppUser.id;
+      fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          text: 'Привет из браузера!',
+          parse_mode: 'HTML'
+        })
+      })
+        .then(res => res.json())
+        .then(console.log)
+        .catch(console.error);
     }
   });
 </script>
 </body>
 </html>
+
