@@ -7,27 +7,24 @@
 </head>
 <body>
   <h2>MiniApp пример</h2>
-  <button id="sendBtn">Отправить данные и закрыть</button>
+  <button id="sendBtn">Отправить сообщение</button>
 
-  <script>
-    const tg = window.Telegram.WebApp;
+<script>
+  const tg = window.Telegram.WebApp;
 
-    document.getElementById("sendBtn").addEventListener("click", () => {
-      const payload = {
-        action: "buy",
-        item: "coffee",
-        price: 2
-      };
+  document.getElementById("sendBtn").addEventListener("click", () => {
+    const payload = {
+      action: "send_message",
+      text: "Привет из MiniApp 🚀"
+    };
 
-      // Отправляем данные в бота
-      tg.sendData(JSON.stringify(payload));
+    // ⚡ Отправляем данные (они пойдут в web_app_query)
+    tg.sendData(JSON.stringify(payload));
 
-      // Закрываем miniapp
-      tg.close();
-    });
-
-    // Автоматически расширяем окно
-    tg.expand();
-  </script>
+    // Можно сразу закрыть миниапп
+    tg.close();
+  });
+</script>
 </body>
 </html>
+
