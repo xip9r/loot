@@ -14,28 +14,24 @@
 
   const slot_data = 'slot1'
 
-  document.getElementById("sendBtn").addEventListener("click", () => {
-    try {
-      const response = await fetch("http://185.128.105.207/webhook", {
-        method: "GET",
-        body: slot_data
+  document.getElementById("sendBtn").addEventListener("click", async () => {
+  try {
+    const response = await fetch("http://185.128.105.207/webhook?data=slot", {
+        method: "GET"
       });
   
-      const result = await response.json();
-      console.log("Ответ от сервера:", result);
-  
-      // можно отправить обратно в бота
-      Telegram.WebApp.sendData(JSON.stringify(result));
+    const text = await response.text(); // если сервер возвращает текст
+    console.log("Ответ сервера:", text);
   
     } catch (err) {
-      console.error("Ошибка запроса:", err);
+      console.error("Ошибка:", err);
     }
-
     // Можно сразу закрыть миниапп
     tg.close();
   });
 </script>
 </body>
 </html>
+
 
 
