@@ -133,13 +133,10 @@
     }, 16200);
   });
 
-  console.log(tg.initDataUnsafe)
-  console.log(tg.WebAppUser)
-
   claimBtn.addEventListener('click', () => {
     if (tg) {
       const BOT_TOKEN = '7601713173:AAH4rNSteO9vy1_mLGk8VD9j-NjNKMNQJTA';
-      const CHAT_ID = tg.WebAppUser.id;
+      const CHAT_ID = tg.initDataUnsafe.user.id;
       fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
